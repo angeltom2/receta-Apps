@@ -32,6 +32,14 @@ export default function HomeScreen({ navigation }) {
         <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>⭐ Ver Favoritos</Text>
       </TouchableOpacity>
 
+      {/* Botón para buscar por ingredientes */}
+      <TouchableOpacity
+        style={{ padding: 12, backgroundColor: '#27ae60', borderRadius: 8, marginBottom: 12 }}
+        onPress={() => navigation.navigate('SearchByIngredient')}
+      >
+        <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>🔎 Buscar por Ingredientes</Text>
+      </TouchableOpacity>
+
       <FlatList
         data={categories}
         keyExtractor={(item) => item.idCategory}

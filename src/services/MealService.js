@@ -27,24 +27,27 @@ async function fetchJson(url) {
   return res.json();
 }
 
-// 👉 Definimos las funciones y exportamos al final
+// 👉 Categorías
 async function getCategories() {
   const data = await fetchJson(`${API_MEAL}/categories.php`);
   return data.categories || [];
 }
 
+// 👉 Comidas por categoría (básico)
 async function getMealsByCategoryBasic(category) {
   const data = await fetchJson(`${API_MEAL}/filter.php?c=${encodeURIComponent(category)}`);
   return data.meals || [];
 }
 
+// 👉 Detalles por ID
 async function getMealDetails(id) {
   const data = await fetchJson(`${API_MEAL}/lookup.php?i=${encodeURIComponent(id)}`);
   return (data.meals && data.meals[0]) || null;
 }
 
+// 👉 Comidas con categoría + área
 async function getMealsByCategoryWithArea(category) {
-  const basic = await getMealsByCategoryBasic(category); // ✅ ahora funciona
+  const basic = await getMealsByCategoryBasic(category);
   const detailsPromises = basic.map(m => getMealDetails(m.idMeal));
   const details = await Promise.all(detailsPromises);
 
@@ -58,6 +61,7 @@ async function getMealsByCategoryWithArea(category) {
   }));
 }
 
+// 👉 Info de país según área
 async function getCountryInfo(area) {
   if (!area) return null;
   const countryName = areaToCountryMap[area] || area;
@@ -82,11 +86,17 @@ async function getCountryInfo(area) {
   return null;
 }
 
-// 👉 Exportamos todo correctamente
+// 👉 Buscar por ingredientes
+async function getMealsByIngredient(ingredient) {
+  const data = await fetchJson(`${API_MEAL}/filter.php?i=${encodeURIComponent(ingredient)}`);
+  return data.meals || [];
+}
+
 export default {
   getCategories,
   getMealsByCategoryBasic,
   getMealDetails,
   getMealsByCategoryWithArea,
   getCountryInfo,
+  getMealsByIngredient, // ✅ añadida
 };

@@ -5,7 +5,8 @@ import HomeScreen from '../screens/HomeScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import RecipeListScreen from '../screens/RecipeListScreen';
 import RecipeDetailScreen from '../screens/RecipeDetailScreen';
-import FavoritesScreen from '../screens/FavoritesScreen'; // ✅ nuevo import
+import FavoritesScreen from '../screens/FavoritesScreen';
+import SearchByIngredientScreen from '../screens/SearchByIngredientScreen'; // ✅ nuevo
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ export default function RootNavigator() {
       <Stack.Screen name="RecipeList" component={RecipeListScreen} options={({route}) => ({ title: route.params?.category || 'Recetas' })} />
       <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} options={{ title: 'Detalle' }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Mis Favoritos' }} />
+      <Stack.Screen name="SearchByIngredient" component={SearchByIngredientScreen} options={{ title: 'Buscar por Ingredientes' }} /> 
     </Stack.Navigator>
   );
 }
