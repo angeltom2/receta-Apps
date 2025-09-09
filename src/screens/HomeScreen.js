@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, Text, View } from 'react-native';
 import MealController from '../Controllers/MealController';
 import CategoryCard from '../assets/components/categoryCard';
 
@@ -24,6 +24,14 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={{flex:1, padding: 12}}>
+      {/* Botón para acceder a favoritos */}
+      <TouchableOpacity
+        style={{ padding: 12, backgroundColor: '#f39c12', borderRadius: 8, marginBottom: 12 }}
+        onPress={() => navigation.navigate('Favorites')}
+      >
+        <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>⭐ Ver Favoritos</Text>
+      </TouchableOpacity>
+
       <FlatList
         data={categories}
         keyExtractor={(item) => item.idCategory}
