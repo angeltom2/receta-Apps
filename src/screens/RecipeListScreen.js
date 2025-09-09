@@ -4,7 +4,7 @@ import { SafeAreaView, View, Text, SectionList, TouchableOpacity, Image, Activit
 import MealController from '../Controllers/MealController';
 
 export default function RecipeListScreen({ route, navigation }) {
-  const { category } = route.params;
+  const { category, includeIngredients, excludeIngredients } = route.params || {};
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,19 +14,38 @@ export default function RecipeListScreen({ route, navigation }) {
     (async () => {
       try {
         setLoading(true);
-        const s = await MealController.getMealsGroupedByArea(category);
-        if (mounted) setSections(s);
+        setError(null);
+
+        console.log("RecipeList params:", { category, includeIngredients, excludeIngredients });
+
+        if ((includeIngredients && includeIngredients.trim()) || (excludeIngredients && excludeIngredients.trim())) {
+          // búsqueda por ingredientes (soporta include solo, exclude solo o ambos)
+          const s = await MealController.getMealsByIngredients(   // ✅ cambio aquí
+            includeIngredients?.trim() || "",
+            excludeIngredients?.trim() || ""
+          );
+          console.log("Secciones desde getMealsByIngredients:", s?.length, s?.[0]?.data?.length);
+          if (mounted) setSections(s);
+        } else if (category) {
+          // búsqueda por categoría -> agrupada por área
+          const s = await MealController.getMealsGroupedByArea(category);
+          console.log("Secciones desde getMealsGroupedByArea:", s?.length);
+          if (mounted) setSections(s);
+        } else {
+          // sin params -> vacío
+          if (mounted) setSections([]);
+        }
       } catch (err) {
-        console.error("Error cargando recetas agrupadas:", err);
+        console.error("Error cargando recetas:", err);
         if (mounted) setError(err.message || String(err));
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => mounted = false;
-  }, [category]);
+    return () => (mounted = false);
+  }, [category, includeIngredients, excludeIngredients]);
 
-  if (loading) return <ActivityIndicator style={{flex:1}} size="large" />;
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" />;
 
   if (error) return (
     <SafeAreaView style={styles.center}>
@@ -35,12 +54,15 @@ export default function RecipeListScreen({ route, navigation }) {
   );
 
   return (
-    <SafeAreaView style={{flex:1}}>
+    <SafeAreaView style={{ flex: 1 }}>
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.idMeal}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('RecipeDetail', { mealId: item.idMeal })}>
+          <TouchableOpacity
+            style={styles.item}
+            onPress={() => navigation.navigate('RecipeDetail', { mealId: item.idMeal })}
+          >
             <Image source={{ uri: item.strMealThumb }} style={styles.thumb} />
             <Text style={styles.title}>{item.strMeal}</Text>
           </TouchableOpacity>
@@ -53,7 +75,7 @@ export default function RecipeListScreen({ route, navigation }) {
             <Text style={styles.headerText}>{section.title}</Text>
           </View>
         )}
-        ListEmptyComponent={() => <Text style={{padding:16}}>No hay recetas</Text>}
+        ListEmptyComponent={() => <Text style={{ padding: 16 }}>No hay recetas</Text>}
       />
     </SafeAreaView>
   );

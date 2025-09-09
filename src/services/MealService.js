@@ -20,7 +20,9 @@ const areaToCountryMap = {
 };
 
 const countryCache = {};
+let allMealsCache = null; // cache para la descarga masiva (exclude-only)
 
+/* util fetch */
 async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status} - ${url}`);
@@ -86,17 +88,134 @@ async function getCountryInfo(area) {
   return null;
 }
 
-// 👉 Buscar por ingredientes
+// 👉 Buscar por ingredientes simples (solo include)
 async function getMealsByIngredient(ingredient) {
   const data = await fetchJson(`${API_MEAL}/filter.php?i=${encodeURIComponent(ingredient)}`);
   return data.meals || [];
 }
 
+/* ---------- NUEVO: helpers para búsqueda avanzada ---------- */
+
+// descarga todos los platos (detallados) usando search.php?f= a..z y cachea el resultado
+async function fetchAllMealsDetailed() {
+  if (allMealsCache) return allMealsCache;
+
+  const letters = "abcdefghijklmnopqrstuvwxyz".split("");
+  const all = [];
+
+  for (const letter of letters) {
+    try {
+      const data = await fetchJson(`${API_MEAL}/search.php?f=${letter}`);
+      if (data && Array.isArray(data.meals)) {
+        all.push(...data.meals);
+      }
+    } catch (err) {
+      // no abortar por errores puntuales en una letra
+      console.warn(`Error fetching letter ${letter}:`, err.message);
+    }
+  }
+
+  // deduplicar por idMeal (por si acaso)
+  const map = {};
+  for (const m of all) {
+    if (m && m.idMeal) map[m.idMeal] = m;
+  }
+  allMealsCache = Object.values(map);
+  return allMealsCache;
+}
+
+// revisa si un detalle de receta (mealDetail) contiene alguno de los términos excluidos
+function mealHasExcludedIngredient(mealDetail, excludesLower) {
+  if (!mealDetail) return false;
+  for (let i = 1; i <= 20; i++) {
+    const ing = mealDetail[`strIngredient${i}`];
+    if (ing && ing.trim()) {
+      const lower = ing.toLowerCase();
+      if (excludesLower.some(ex => lower.includes(ex))) return true;
+    }
+  }
+  return false;
+}
+
+// ---------- NUEVO: búsqueda que soporta include / exclude correctamente ----------
+/**
+ * searchMealsByIngredients(include, exclude)
+ * - include: string (comma separated) OR empty
+ * - exclude: string (comma separated) OR empty
+ *
+ * Retorna: array de objetos básicos: { idMeal, strMeal, strMealThumb }
+ */
+async function searchMealsByIngredients(include, exclude) {
+  const includeArr = include
+    ? include.split(",").map(s => s.trim().toLowerCase()).filter(Boolean)
+    : [];
+  const excludeArr = exclude
+    ? exclude.split(",").map(s => s.trim().toLowerCase()).filter(Boolean)
+    : [];
+
+  // -------- Caso A: hay includes -> hacemos llamadas filter.php?i= por cada include y hacemos INTERSECCIÓN
+  if (includeArr.length > 0) {
+    // obtener sets básicos (id, name, thumb)
+    const sets = [];
+    for (const ing of includeArr) {
+      try {
+        const res = await getMealsByIngredient(ing);
+        // API devuelve null si no hay coincidencias; asegurar array
+        sets.push(res || []);
+      } catch (err) {
+        console.warn("Error getMealsByIngredient for", ing, err.message);
+        sets.push([]);
+      }
+    }
+
+    // intersección estricta: solo platos que aparecen en todas las listas
+    let intersection = sets.length > 0 ? sets[0] : [];
+    for (let i = 1; i < sets.length; i++) {
+      intersection = intersection.filter(a => sets[i].some(b => b.idMeal === a.idMeal));
+    }
+
+    // si no hay exclusión, devolver intersection (deduplicado)
+    if (excludeArr.length === 0) {
+      const unique = {};
+      for (const m of intersection) unique[m.idMeal] = m;
+      return Object.values(unique);
+    }
+
+    // si hay exclusiones -> necesitamos detalles para filtrar por ingredientes reales
+    const details = await Promise.all(intersection.map(m => getMealDetails(m.idMeal)));
+    const filtered = [];
+    for (const d of details) {
+      if (!d) continue;
+      const hasExcluded = mealHasExcludedIngredient(d, excludeArr);
+      if (!hasExcluded) {
+        filtered.push({ idMeal: d.idMeal, strMeal: d.strMeal, strMealThumb: d.strMealThumb });
+      }
+    }
+    return filtered;
+  }
+
+  // -------- Caso B: NO includes pero SÍ excludes -> debemos traer *todas* las recetas y filtrar
+  if (excludeArr.length > 0) {
+    // traer todas (por primera letra) - detalles completos para cada plato
+    const allDetailed = await fetchAllMealsDetailed(); // array de objetos con ingredientes
+    // filtrar por exclusiones (buscando substrings en ingredientes)
+    const filtered = allDetailed.filter(d => !mealHasExcludedIngredient(d, excludeArr));
+    // map a la forma básica
+    return filtered.map(d => ({ idMeal: d.idMeal, strMeal: d.strMeal, strMealThumb: d.strMealThumb }));
+  }
+
+  // -------- Caso C: sin include ni exclude -> devolver vacío (sin criterio)
+  return [];
+}
+
+/* ---------- exports ---------- */
 export default {
   getCategories,
   getMealsByCategoryBasic,
   getMealDetails,
   getMealsByCategoryWithArea,
   getCountryInfo,
-  getMealsByIngredient, // ✅ añadida
+  getMealsByIngredient,
+  searchMealsByIngredients, // <-- nueva función robusta
 };
+
