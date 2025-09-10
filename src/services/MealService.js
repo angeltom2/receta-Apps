@@ -20,7 +20,7 @@ const areaToCountryMap = {
 };
 
 const countryCache = {};
-let allMealsCache = null; // cache para la descarga masiva (exclude-only)
+let allMealsCache = null; 
 
 /* util fetch */
 async function fetchJson(url) {
@@ -88,15 +88,13 @@ async function getCountryInfo(area) {
   return null;
 }
 
-// 👉 Buscar por ingredientes simples (solo include)
+
 async function getMealsByIngredient(ingredient) {
   const data = await fetchJson(`${API_MEAL}/filter.php?i=${encodeURIComponent(ingredient)}`);
   return data.meals || [];
 }
 
-/* ---------- NUEVO: helpers para búsqueda avanzada ---------- */
 
-// descarga todos los platos (detallados) usando search.php?f= a..z y cachea el resultado
 async function fetchAllMealsDetailed() {
   if (allMealsCache) return allMealsCache;
 
@@ -137,14 +135,7 @@ function mealHasExcludedIngredient(mealDetail, excludesLower) {
   return false;
 }
 
-// ---------- NUEVO: búsqueda que soporta include / exclude correctamente ----------
-/**
- * searchMealsByIngredients(include, exclude)
- * - include: string (comma separated) OR empty
- * - exclude: string (comma separated) OR empty
- *
- * Retorna: array de objetos básicos: { idMeal, strMeal, strMealThumb }
- */
+
 async function searchMealsByIngredients(include, exclude) {
   const includeArr = include
     ? include.split(",").map(s => s.trim().toLowerCase()).filter(Boolean)
