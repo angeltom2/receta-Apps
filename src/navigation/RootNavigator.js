@@ -6,7 +6,8 @@ import CategoriesScreen from '../screens/CategoriesScreen';
 import RecipeListScreen from '../screens/RecipeListScreen';
 import RecipeDetailScreen from '../screens/RecipeDetailScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
-import SearchByIngredientScreen from '../screens/SearchByIngredientScreen'; // ✅ nuevo
+import SearchByIngredientScreen from '../screens/SearchByIngredientScreen';
+import ListaComprasScreen from '../screens/ListaComprasScreens';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +20,7 @@ export default function RootNavigator() {
       <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} options={{ title: 'Detalle' }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Mis Favoritos' }} />
       <Stack.Screen name="SearchByIngredient" component={SearchByIngredientScreen} options={{ title: 'Buscar por Ingredientes' }} /> 
+      <Stack.Screen name="ListaCompras" component={ListaComprasScreen} options={{ title: "Lista de Compras" }} />
     </Stack.Navigator>
   );
 }
