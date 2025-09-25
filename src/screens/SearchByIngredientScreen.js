@@ -1,30 +1,48 @@
 // src/screens/SearchByIngredientsScreen.js
 import React, { useState } from "react";
 import {
-  SafeAreaView,
+  View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  View,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 
 export default function SearchByIngredientsScreen({ navigation }) {
   const [include, setInclude] = useState("");
   const [exclude, setExclude] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSearch = () => {
-    navigation.navigate("RecipeList", {
-      includeIngredients: include,
-      excludeIngredients: exclude,
+    // Trim para evitar params vacíos con espacios
+    const includeTrim = (include || "").trim();
+    const excludeTrim = (exclude || "").trim();
+
+    if (!includeTrim && !excludeTrim) {
+      Alert.alert("Atención", "Ingresa al menos un ingrediente para incluir o excluir.");
+      return;
+    }
+
+    setLoading(true);
+
+    navigation.navigate("Inicio", {
+      screen: "RecipeList",
+      params: {
+        includeIngredients: includeTrim,
+        excludeIngredients: excludeTrim,
+      },
     });
+
+    setTimeout(() => setLoading(false), 600);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+    <View style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -36,10 +54,12 @@ export default function SearchByIngredientsScreen({ navigation }) {
             <Text style={styles.label}>Ingredientes a Incluir:</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej: chicken, beef..."
+              placeholder="Ej: chicken, beef"
               value={include}
               onChangeText={setInclude}
               placeholderTextColor="#999"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
 
@@ -47,26 +67,30 @@ export default function SearchByIngredientsScreen({ navigation }) {
             <Text style={styles.label}>Ingredientes a Excluir:</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej: pork, onion..."
+              placeholder="Ej: pork, onion"
               value={exclude}
               onChangeText={setExclude}
               placeholderTextColor="#999"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={handleSearch}>
-            <Text style={styles.buttonText}>🍽️ Buscar Recetas</Text>
+          <TouchableOpacity style={styles.button} onPress={handleSearch} disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>🍽️ Buscar Recetas</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
+  container: { padding: 20, paddingTop: 36 },
   title: {
     fontSize: 22,
     fontWeight: "700",
@@ -74,15 +98,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#2c3e50",
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 6,
-    color: "#34495e",
-  },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 15, fontWeight: "600", marginBottom: 6, color: "#34495e" },
   input: {
     borderWidth: 1,
     borderColor: "#dcdcdc",
@@ -97,15 +114,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 20,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
     elevation: 3,
   },
-  buttonText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+  buttonText: { color: "white", fontWeight: "700", fontSize: 16 },
 });
